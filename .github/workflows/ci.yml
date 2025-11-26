@@ -1,0 +1,390 @@
+name: Test DocC Index Generator
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.head_ref }}
+  cancel-in-progress: true
+
+jobs:
+  test-single-module:
+    name: Test Single Module
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Generate Index - Single Module
+        uses: ./
+        with:
+          version: '1.0.0'
+          project-name: 'TestProject'
+          project-description: 'Single module test project'
+          modules: |
+            [
+              {
+                "name": "CoreModule",
+                "path": "coremodule",
+                "description": "Main functionality module",
+                "badge": "Core"
+              }
+            ]
+      
+      - name: Verify index.html exists
+        run: |
+          if [ ! -f "docs/index.html" ]; then
+            echo "❌ index.html was not generated!"
+            exit 1
+          fi
+          echo "✅ index.html exists"
+      
+      - name: Verify content
+        run: |
+          content=$(cat docs/index.html)
+          
+          # Check for project name
+          if ! echo "$content" | grep -q "TestProject"; then
+            echo "❌ Project name not found"
+            exit 1
+          fi
+          
+          # Check for version
+          if ! echo "$content" | grep -q "1.0.0"; then
+            echo "❌ Version not found"
+            exit 1
+          fi
+          
+          # Check for module name
+          if ! echo "$content" | grep -q "CoreModule"; then
+            echo "❌ Module name not found"
+            exit 1
+          fi
+          
+          # Check for module description
+          if ! echo "$content" | grep -q "Main functionality module"; then
+            echo "❌ Module description not found"
+            exit 1
+          fi
+          
+          echo "✅ All content checks passed"
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: single-module-docs
+          path: docs/
+
+  test-multiple-modules:
+    name: Test Multiple Modules
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Generate Index - Multiple Modules
+        uses: ./
+        with:
+          version: '2.0.0-beta'
+          project-name: 'MultiModuleProject'
+          project-description: 'Testing multiple modules generation'
+          modules: |
+            [
+              {
+                "name": "ValidatorCore",
+                "path": "validatorcore",
+                "description": "Core validation functionality and rules for Swift applications",
+                "badge": "Core"
+              },
+              {
+                "name": "ValidatorUI",
+                "path": "validatorui",
+                "description": "UI components and helpers for validation interfaces",
+                "badge": "UI"
+              },
+              {
+                "name": "ValidatorTesting",
+                "path": "validatortesting",
+                "description": "Testing utilities and mock validators",
+                "badge": "Testing"
+              }
+            ]
+      
+      - name: Verify multiple modules
+        run: |
+          content=$(cat docs/index.html)
+          
+          # Check for all three modules
+          for module in "ValidatorCore" "ValidatorUI" "ValidatorTesting"; do
+            if ! echo "$content" | grep -q "$module"; then
+              echo "❌ Module $module not found"
+              exit 1
+            fi
+            echo "✅ Module $module found"
+          done
+          
+          # Check for all badges
+          for badge in "Core" "UI" "Testing"; do
+            if ! echo "$content" | grep -q "$badge"; then
+              echo "❌ Badge $badge not found"
+              exit 1
+            fi
+            echo "✅ Badge $badge found"
+          done
+          
+          echo "✅ All modules verified"
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: multi-module-docs
+          path: docs/
+
+  test-no-modules:
+    name: Test No Modules
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Generate Index - No Modules
+        uses: ./
+        with:
+          version: '0.1.0'
+          project-name: 'EmptyProject'
+          project-description: 'Testing generation without modules'
+      
+      - name: Verify empty state
+        run: |
+          content=$(cat docs/index.html)
+          
+          # Check for empty state message
+          if ! echo "$content" | grep -q "No documentation modules available"; then
+            echo "❌ Empty state message not found"
+            exit 1
+          fi
+          
+          echo "✅ Empty state handled correctly"
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: no-modules-docs
+          path: docs/
+
+  test-special-characters:
+    name: Test Special Characters
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Generate Index - Special Characters
+        uses: ./
+        with:
+          version: '1.0.0'
+          project-name: 'Test & <Special> "Characters"'
+          project-description: 'Testing HTML escaping & special chars'
+          modules: |
+            [
+              {
+                "name": "Module-With-Dash",
+                "path": "module-with-dash",
+                "description": "Description with \"quotes\" and <tags>"
+              }
+            ]
+      
+      - name: Verify HTML validity
+        run: |
+          content=$(cat docs/index.html)
+          
+          # Basic HTML structure check
+          if ! echo "$content" | grep -q "<!DOCTYPE html>"; then
+            echo "❌ Invalid HTML structure"
+            exit 1
+          fi
+          
+          if ! echo "$content" | grep -q "</html>"; then
+            echo "❌ HTML not properly closed"
+            exit 1
+          fi
+          
+          echo "✅ HTML structure is valid"
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: special-chars-docs
+          path: docs/
+
+  test-html-structure:
+    name: Test HTML Structure
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Generate Index
+        uses: ./
+        with:
+          version: '1.0.0'
+          project-name: 'StructureTest'
+          project-description: 'Testing HTML structure'
+          modules: |
+            [
+              {
+                "name": "TestModule",
+                "path": "testmodule",
+                "description": "Test module"
+              }
+            ]
+      
+      - name: Validate HTML structure
+        run: |
+          content=$(cat docs/index.html)
+          
+          # Check for essential HTML elements
+          required_elements=(
+            "<!DOCTYPE html>"
+            "<html lang=\"en\">"
+            "<head>"
+            "<meta charset=\"UTF-8\">"
+            "<title>"
+            "<style>"
+            "<body>"
+            "<div class=\"container\">"
+            "<header>"
+            "<h1>"
+            "<div class=\"docs-grid\">"
+            "<footer>"
+          )
+          
+          for element in "${required_elements[@]}"; do
+            if ! echo "$content" | grep -q "$element"; then
+              echo "❌ Missing required element: $element"
+              exit 1
+            fi
+          done
+          
+          echo "✅ All required HTML elements present"
+      
+      - name: Check CSS
+        run: |
+          content=$(cat docs/index.html)
+          
+          # Check for essential CSS classes
+          css_classes=(
+            ".container"
+            ".doc-card"
+            ".module-badge"
+            ".version-badge"
+            ".docs-grid"
+          )
+          
+          for class in "${css_classes[@]}"; do
+            if ! echo "$content" | grep -q "$class"; then
+              echo "❌ Missing CSS class: $class"
+              exit 1
+            fi
+          done
+          
+          echo "✅ All required CSS classes present"
+
+  test-links:
+    name: Test Documentation Links
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Generate Index
+        uses: ./
+        with:
+          version: '1.0.0'
+          project-name: 'LinkTest'
+          project-description: 'Testing documentation links'
+          modules: |
+            [
+              {
+                "name": "ModuleOne",
+                "path": "moduleone",
+                "description": "First module"
+              },
+              {
+                "name": "ModuleTwo",
+                "path": "moduletwo",
+                "description": "Second module"
+              }
+            ]
+      
+      - name: Verify links format
+        run: |
+          content=$(cat docs/index.html)
+          
+          # Check link format: version/ModuleName/documentation/modulepath
+          if ! echo "$content" | grep -q 'href="1.0.0/ModuleOne/documentation/moduleone"'; then
+            echo "❌ ModuleOne link format incorrect"
+            exit 1
+          fi
+          
+          if ! echo "$content" | grep -q 'href="1.0.0/ModuleTwo/documentation/moduletwo"'; then
+            echo "❌ ModuleTwo link format incorrect"
+            exit 1
+          fi
+          
+          echo "✅ All links have correct format"
+
+  summary:
+    name: Test Summary
+    runs-on: ubuntu-latest
+    needs: [test-single-module, test-multiple-modules, test-no-modules, test-special-characters, test-html-structure, test-links]
+    if: always()
+    steps:
+      - name: Check test results
+        run: |
+          echo "## Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.test-single-module.result }}" == "success" ]; then
+            echo "✅ Single Module Test: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Single Module Test: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.test-multiple-modules.result }}" == "success" ]; then
+            echo "✅ Multiple Modules Test: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Multiple Modules Test: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.test-no-modules.result }}" == "success" ]; then
+            echo "✅ No Modules Test: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ No Modules Test: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.test-special-characters.result }}" == "success" ]; then
+            echo "✅ Special Characters Test: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Special Characters Test: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.test-html-structure.result }}" == "success" ]; then
+            echo "✅ HTML Structure Test: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ HTML Structure Test: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          if [ "${{ needs.test-links.result }}" == "success" ]; then
+            echo "✅ Links Test: PASSED" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Links Test: FAILED" >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Fail if any test failed
+        if: contains(needs.*.result, 'failure')
+        run: exit 1
