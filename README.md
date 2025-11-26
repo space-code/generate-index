@@ -27,7 +27,7 @@ A GitHub Action for automatically generating a beautiful index page for Swift Do
 - [DocC Integration](#docc-integration)
 - [Communication](#communication)
 - [Contributing](#contributing)
-- [Lisence](#license)
+- [Licence](#license)
 
 ## Usage
 
