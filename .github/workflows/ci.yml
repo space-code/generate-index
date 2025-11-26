@@ -74,7 +74,7 @@ jobs:
           echo "✅ All content checks passed"
       
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: single-module-docs
           path: docs/
@@ -139,7 +139,7 @@ jobs:
           echo "✅ All modules verified"
       
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: multi-module-docs
           path: docs/
@@ -171,7 +171,7 @@ jobs:
           echo "✅ Empty state handled correctly"
       
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: no-modules-docs
           path: docs/
@@ -216,7 +216,7 @@ jobs:
           echo "✅ HTML structure is valid"
       
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: special-chars-docs
           path: docs/
